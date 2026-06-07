@@ -1,0 +1,74 @@
+name: Agent Instructions Policy
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-agent-instructions:
+    name: Verify AGENTS.md and Copilot instructions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Verify instruction policy
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import sys
+
+          EXPECTED_HASH = "a7e125f9a4f597b52d953d3cd2ebb64db08a7cdee25adcb78b7469c6d8d427d0"
+          START_MARKER = "# AGENTS.md – Arbeitsweise für Codex\n"
+          END_MARKER = "5. was als nächster sinnvoller Schritt empfohlen wird.\n"
+
+          def fail(path: str, message: str) -> None:
+              print(f"::error file={path}::{message}")
+
+          def read_text(path: str) -> str | None:
+              p = Path(path)
+              if not p.exists():
+                  fail(path, f"{path} fehlt. Diese Datei ist Pflicht.")
+                  return None
+              return p.read_text(encoding="utf-8").replace("\r\n", "\n")
+
+          agents = read_text("AGENTS.md")
+          copilot = read_text(".github/copilot-instructions.md")
+          failed = False
+
+          if agents is None or copilot is None:
+              sys.exit(1)
+
+          if not agents.startswith(START_MARKER):
+              fail("AGENTS.md", "AGENTS.md muss mit dem verbindlichen Codex-Pflichtblock beginnen.")
+              failed = True
+
+          if END_MARKER not in agents:
+              fail("AGENTS.md", "Der Abschluss des verbindlichen Pflichtblocks wurde nicht gefunden.")
+              failed = True
+              required_block = ""
+          else:
+              required_block = agents[:agents.index(END_MARKER) + len(END_MARKER)]
+              digest = hashlib.sha256(required_block.encode("utf-8")).hexdigest()
+              if digest != EXPECTED_HASH:
+                  fail("AGENTS.md", "Der verbindliche Pflichtblock wurde verändert. Bitte Standardvorlage wiederherstellen.")
+                  failed = True
+
+          if required_block and not copilot.startswith(required_block):
+              fail(".github/copilot-instructions.md", "Copilot-Anweisungen müssen mit exakt demselben Pflichtblock wie AGENTS.md beginnen.")
+              failed = True
+
+          if failed:
+              sys.exit(1)
+
+          print("Agent instructions policy OK.")
+          PY
