@@ -30,6 +30,16 @@ jobs:
           EXPECTED_HASH = "a7e125f9a4f597b52d953d3cd2ebb64db08a7cdee25adcb78b7469c6d8d427d0"
           START_MARKER = "# AGENTS.md – Arbeitsweise für Codex\n"
           END_MARKER = "5. was als nächster sinnvoller Schritt empfohlen wird.\n"
+          ACTIVITY_MARKER = "ACTIVITY_FIRST_UI_V1"
+          ACTIVITY_DOC = "docs/ui-activity-standard.md"
+          ACTIVITY_REQUIRED_PHRASES = [
+              "Activity-first UI ist Pflicht.",
+              "Keine langen Prozesse ohne sichtbaren Status, Fortschritt, Live-Log und nächste Aktion.",
+              "Activity Center",
+              "Job Status Panel",
+              "Timeline oder Audit-Spur",
+              "Nicht akzeptabel",
+          ]
 
           def fail(path: str, message: str) -> None:
               print(f"::error file={path}::{message}")
@@ -43,9 +53,10 @@ jobs:
 
           agents = read_text("AGENTS.md")
           copilot = read_text(".github/copilot-instructions.md")
+          activity = read_text(ACTIVITY_DOC)
           failed = False
 
-          if agents is None or copilot is None:
+          if agents is None or copilot is None or activity is None:
               sys.exit(1)
 
           if not agents.startswith(START_MARKER):
@@ -67,8 +78,26 @@ jobs:
               fail(".github/copilot-instructions.md", "Copilot-Anweisungen müssen mit exakt demselben Pflichtblock wie AGENTS.md beginnen.")
               failed = True
 
+          for path, text in (("AGENTS.md", agents), (".github/copilot-instructions.md", copilot), (ACTIVITY_DOC, activity)):
+              if ACTIVITY_MARKER not in text:
+                  fail(path, f"Pflichtmarker {ACTIVITY_MARKER} fehlt.")
+                  failed = True
+
+          for path, text in (("AGENTS.md", agents), (".github/copilot-instructions.md", copilot)):
+              if ACTIVITY_DOC not in text:
+                  fail(path, f"Verbindlicher Verweis auf {ACTIVITY_DOC} fehlt.")
+                  failed = True
+              if "Activity-first UI ist Pflicht." not in text:
+                  fail(path, "Verbindliche Activity-first-Pflichtregel fehlt.")
+                  failed = True
+
+          for phrase in ACTIVITY_REQUIRED_PHRASES:
+              if phrase not in activity:
+                  fail(ACTIVITY_DOC, f"Pflichtinhalt fehlt: {phrase}")
+                  failed = True
+
           if failed:
               sys.exit(1)
 
-          print("Agent instructions policy OK.")
+          print("Agent and activity instructions policy OK.")
           PY

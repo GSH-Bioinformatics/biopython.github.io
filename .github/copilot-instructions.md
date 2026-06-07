@@ -79,6 +79,15 @@ Erkläre knapp:
 4. wie getestet wurde,
 5. was als nächster sinnvoller Schritt empfohlen wird.
 
+## Pflicht: Activity-First UI und Prozesssichtbarkeit
+
+Policy-Marker: `ACTIVITY_FIRST_UI_V1`
+
+Activity-first UI ist Pflicht. Bei jeder UI-, Import-, Analyse-, Export-, Bestell-, Dokument-, Datenbank- oder Hintergrundjob-Funktion muss sichtbar sein, was gerade läuft, was erledigt ist, was offen ist, ob Fehler vorliegen und was als nächste Aktion sinnvoll ist.
+
+Keine langen Prozesse ohne sichtbaren Status, Fortschritt, Live-Log und nächste Aktion. Arbeiten im Hintergrund ohne erkennbare Aktivität sind nicht zulässig.
+
+Bei jeder UI-/Workflow-Änderung ist [docs/ui-activity-standard.md](docs/ui-activity-standard.md) verbindlich zu beachten. Wenn ein Projekt noch keine passende technische Grundlage besitzt, muss sie im Rahmen der Änderung ergänzt oder ausdrücklich als blockierender Projektmangel dokumentiert werden.
 ---
 
 # GitHub Copilot Projektregeln
